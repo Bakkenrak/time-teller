@@ -1,46 +1,58 @@
 #include <iostream>
-#include <ctime>
-#include <vector>
-#include <algorithm>
 #include <cmath>
 
-void round_minutes(std::tm* instance) {
+struct RoundedTime {
+    int hour;
+    int min;
+    int sec;
+};
+
+RoundedTime getRoundedTime(int hour, int min, int sec) {
     // Calculate total seconds of the hour
-    int seconds_of_hour = instance->tm_min * 60 + instance->tm_sec;
+    int secondsOfHour = min * 60 + sec;
 
     // Divisors to round to
-    std::vector<int> divisors = {10*60, 15*60};
+    int tenMinSecs = 10*60;
+    int fifteenMinSecs = 15*60;
 
     // Find the divisor closest to the current seconds of the hour
-    int closest_divisor = *std::min_element(divisors.begin(), divisors.end(), [seconds_of_hour](int x, int y) {
-        return std::abs(x - seconds_of_hour % x) < std::abs(y - seconds_of_hour % y);
-    });
+    int diffClosestBy10 = std::min(std::abs(tenMinSecs - secondsOfHour % tenMinSecs), secondsOfHour % tenMinSecs);
+    int diffClosestBy15 = std::min(std::abs(fifteenMinSecs - secondsOfHour % fifteenMinSecs), secondsOfHour % fifteenMinSecs);
+    int closestDivisor;
+    if (diffClosestBy10 < diffClosestBy15) {
+        closestDivisor = tenMinSecs;
+    } else {
+        closestDivisor = fifteenMinSecs;
+    }
 
     // Calculate the diff of the current second to the closest divisor
-    int remainder = seconds_of_hour % closest_divisor;
+    int remainder = secondsOfHour % closestDivisor;
 
     // If the remainder is greater than or equal to half the divisor, round up, otherwise round down
     int roundedSecond;
-    if (remainder >= closest_divisor / 2) {
-        roundedSecond = seconds_of_hour - remainder + closest_divisor;
+    if (remainder >= closestDivisor / 2) {
+        roundedSecond = secondsOfHour - remainder + closestDivisor;
     } else {
-        roundedSecond = seconds_of_hour - remainder;
+        roundedSecond = secondsOfHour - remainder;
     }
 
     int minutes = roundedSecond / 60;
 
+    RoundedTime roundedTime;
     // If rounding up brought us to 60 minutes, we need to roll over to the next hour
     if (minutes == 60) {
-        instance->tm_hour += 1;
-        instance->tm_min = 0;
-        instance->tm_sec = 0;
+        roundedTime.hour = hour + 1;
+        roundedTime.min = 0;
+        roundedTime.sec = 0;
     } else {
-        instance->tm_min = minutes;
-        instance->tm_sec = 0;
+        roundedTime.hour = hour;
+        roundedTime.min = minutes;
+        roundedTime.sec = 0;
     }
+    return roundedTime;
 }
 
-int get_rounded_hour_12h_format(int hour, int minutes) {
+int getRoundedHour12hFormat(int hour, int minutes) {
     // If minutes are at least 30, we need to roll over to the next hour
     if (minutes >= 30) {
         hour += 1;
@@ -55,20 +67,17 @@ int get_rounded_hour_12h_format(int hour, int minutes) {
     }
 }
 
-void tell() {
-    std::time_t t = std::time(0);   // get time now
-    std::tm* now = std::localtime(&t);
+void tell(int hour, int min, int sec) {
+    std::cout << hour << ":" << min << ":" << sec << std::endl;
 
-    std::cout << now->tm_hour << ":" << now->tm_min << ":" << now->tm_sec << std::endl;
+    RoundedTime roundedTime = getRoundedTime(hour, min, sec);
+    int hours = getRoundedHour12hFormat(roundedTime.hour, roundedTime.min);
+    int minutes = roundedTime.min;
 
-    round_minutes(now);
-    int hours = get_rounded_hour_12h_format(now->tm_hour, now->tm_min);
-    int minutes = now->tm_min;
-
-    std::cout << hours << " - " << minutes << std::endl;
+    std::cout << "Rounded to: " << hours << ":" << minutes << std::endl;
 }
 
 int main() {
-    tell();
+    tell(16, 55, 1);
     return 0;
 }
