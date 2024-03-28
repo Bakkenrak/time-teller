@@ -73,8 +73,6 @@ void connectAudioPlayer() {
     }
   }
   Serial.println(F("DFPlayer Mini online."));
-  
-  myDFPlayer.volume(5);  //Set volume value. From 0 to 30
 
   // configure audio player's busy pin as input
   pinMode(audioPlayerBusyPin, INPUT);
@@ -197,5 +195,6 @@ void tellTime() {
   Serial.println();
 
 
+  myDFPlayer.volume(5);  //Set volume value. From 0 to 30
   myDFPlayer.playFolder(hours, minutes);
 }
