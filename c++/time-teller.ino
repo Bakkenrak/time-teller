@@ -30,8 +30,15 @@ SoftwareSerial mySoftwareSerial(13, 15); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
 const int audioPlayerBusyPin = 12;
 
+const int volumeButtonPin = 4;
+int volumeLevel = 5; //Set volume value. From 0 to 30
+
 const byte sensorTriggerPin = 14;
 const byte sensorEchoPin = 16;
+const long sensorCheckIntervalMillis = 1000;
+// Generally, you should use "unsigned long" for variables that hold time
+// The value will quickly become too large for an int to store
+unsigned long lastSensorCheckMillis = 0;
 
 void setup()
 {
@@ -44,9 +51,10 @@ void setup()
   
   connectAudioPlayer();
   
-
   pinMode(sensorTriggerPin, OUTPUT);
   pinMode(sensorEchoPin, INPUT);
+
+  pinMode(volumeButtonPin, INPUT);
 }
 
 void connectToWifi() {
@@ -80,12 +88,19 @@ void connectAudioPlayer() {
 
 void loop()
 {
-  delay(1000); // delay sensor distance check
+  if (digitalRead(volumeButtonPin) == LOW) {
+    toggleVolume();
+  }
 
-  if (getSensorDistance() < 30) {
-    timeClient.update();
-    tellTime();
-    delay(2000); // wait a bit so that the sound can finish playing before continuing the loop
+  unsigned long currentMillis = millis();
+  bool shouldCheckSensor = currentMillis - lastSensorCheckMillis >= sensorCheckIntervalMillis;
+  if (shouldCheckSensor) {
+    lastSensorCheckMillis = currentMillis;
+    if (getSensorDistance() < 30) {
+      timeClient.update();
+      tellTime();
+      waitForReady();
+    }
   }
 }
 
@@ -194,7 +209,25 @@ void tellTime() {
   Serial.println(minutes);
   Serial.println();
 
+  playSound(hours, minutes);
+}
 
-  myDFPlayer.volume(5);  //Set volume value. From 0 to 30
-  myDFPlayer.playFolder(hours, minutes);
+void toggleVolume() {
+  volumeLevel -= 2;
+  if (volumeLevel <= 0) {
+    volumeLevel = 30;
+  }
+  Serial.print("Toggling volume to ");
+  Serial.println(volumeLevel);
+
+  playSound(0, 0);
+}
+
+void playSound(int folderNr, int fileNr) {
+  applyVolumeLevel();
+  myDFPlayer.playFolder(folderNr, fileNr);
+}
+
+void applyVolumeLevel() {
+  myDFPlayer.volume(volumeLevel);
 }
