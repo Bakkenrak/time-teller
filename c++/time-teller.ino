@@ -196,15 +196,5 @@ void tellTime() {
   Serial.println();
 
 
-  myDFPlayer.playFolder(1,1);
-  waitForReady();
-  if (minutes > 0) {
-    myDFPlayer.playFolder(3,minutes);
-    waitForReady();
-  }
-  myDFPlayer.playFolder(2,hours);
-  waitForReady();
-  if (minutes == 0) {
-    myDFPlayer.playFolder(3,minutes);
-  }
+  myDFPlayer.playFolder(hours, minutes);
 }
