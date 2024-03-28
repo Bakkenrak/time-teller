@@ -82,11 +82,12 @@ void connectAudioPlayer() {
 
 void loop()
 {
-  delay(1000);
+  delay(1000); // delay sensor distance check
 
   if (getSensorDistance() < 30) {
     timeClient.update();
     tellTime();
+    delay(2000); // wait a bit so that the sound can finish playing before continuing the loop
   }
 }
 
