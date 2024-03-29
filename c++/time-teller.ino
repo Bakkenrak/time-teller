@@ -6,10 +6,6 @@
 #include <WiFiUdp.h>
 #include <cmath>
 
-#define DEBUG
-#define DFPLAYER_DEBUG
-#define DFPLAYER_DEBUG_HEAVY
-
 struct RoundedTime {
     int hour;
     int min;
@@ -142,8 +138,8 @@ RoundedTime getRoundedTime(int hour, int min, int sec) {
     int fifteenMinSecs = 15*60;
 
     // Find the divisor closest to the current seconds of the hour
-    int diffClosestBy10 = std::min(std::abs(tenMinSecs - secondsOfHour % tenMinSecs), secondsOfHour % tenMinSecs);
-    int diffClosestBy15 = std::min(std::abs(fifteenMinSecs - secondsOfHour % fifteenMinSecs), secondsOfHour % fifteenMinSecs);
+    int diffClosestBy10 = std::min(tenMinSecs - secondsOfHour % tenMinSecs, secondsOfHour % tenMinSecs);
+    int diffClosestBy15 = std::min(fifteenMinSecs - secondsOfHour % fifteenMinSecs, secondsOfHour % fifteenMinSecs);
     int closestDivisor;
     if (diffClosestBy10 < diffClosestBy15) {
         closestDivisor = tenMinSecs;
