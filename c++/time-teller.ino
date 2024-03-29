@@ -27,6 +27,7 @@ DFRobotDFPlayerMini myDFPlayer;
 const int audioPlayerBusyPin = 12;
 
 const int volumeButtonPin = 4;
+int initialVolumeButtonState;
 int volumeLevel = 5; //Set volume value. From 0 to 30
 
 const byte sensorTriggerPin = 14;
@@ -51,6 +52,7 @@ void setup()
   pinMode(sensorEchoPin, INPUT);
 
   pinMode(volumeButtonPin, INPUT);
+  initialVolumeButtonState = digitalRead(volumeButtonPin);
 }
 
 void connectToWifi() {
@@ -84,7 +86,7 @@ void connectAudioPlayer() {
 
 void loop()
 {
-  if (digitalRead(volumeButtonPin) == LOW) {
+  if (digitalRead(volumeButtonPin) != initialVolumeButtonState) {
     toggleVolume();
   }
 
