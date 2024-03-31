@@ -11,10 +11,6 @@ struct Time {
     int sec;
 };
 
-// WIFI credentials
-const char *ssid     = "MY_WIFI_SID";
-const char *password = "my-wifi-pw";
-
 // init audio player
 SoftwareSerial mySoftwareSerial(13, 15); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
@@ -43,7 +39,7 @@ void setup()
 }
 
 void connectToWifi() {
-  WiFi.begin(ssid, password);
+  WiFi.begin(getWifiSSID(), getWifiPassword());
   while ( WiFi.status() != WL_CONNECTED ) {
     delay ( 500 );
     Serial.print ( "." );
