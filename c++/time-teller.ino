@@ -5,8 +5,9 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <cmath>
+#include <time.h>
 
-struct RoundedTime {
+struct Time {
     int hour;
     int min;
     int sec;
@@ -28,7 +29,7 @@ const int audioPlayerBusyPin = 12;
 
 const int volumeButtonPin = 4;
 int initialVolumeButtonState;
-int volumeLevel = 5; //Set volume value. From 0 to 30
+int volumeLevel = 20; //Set volume value. From 0 to 30
 
 const byte sensorTriggerPin = 14;
 const byte sensorEchoPin = 16;
@@ -44,7 +45,7 @@ void setup()
 
   connectToWifi();
 
-  timeClient.begin();
+  configTime("CET-1CEST,M3.5.0/02,M10.5.0/03", "pool.ntp.org");
   
   connectAudioPlayer();
   
@@ -95,7 +96,6 @@ void loop()
   if (shouldCheckSensor) {
     lastSensorCheckMillis = currentMillis;
     if (getSensorDistance() < 30) {
-      timeClient.update();
       tellTime();
       waitForReady();
     }
@@ -131,7 +131,7 @@ bool isReadyToPlay() {
   return digitalRead(audioPlayerBusyPin) == HIGH;
 }
 
-RoundedTime getRoundedTime(int hour, int min, int sec) {
+Time getRoundedTime(int hour, int min, int sec) {
     // Calculate total seconds of the hour
     int secondsOfHour = min * 60 + sec;
 
@@ -162,7 +162,7 @@ RoundedTime getRoundedTime(int hour, int min, int sec) {
 
     int minutes = roundedSecond / 60;
 
-    RoundedTime roundedTime;
+    Time roundedTime;
     // If rounding up brought us to 60 minutes, we need to roll over to the next hour
     if (minutes == 60) {
         roundedTime.hour = hour + 1;
@@ -192,15 +192,11 @@ int getRoundedHour12hFormat(int hour, int minutes) {
 }
 
 void tellTime() {
-  RoundedTime roundedTime = getRoundedTime(timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
+  Time currentTime = getCurrentTime();
+  Time roundedTime = getRoundedTime(currentTime.hour, currentTime.min, currentTime.sec);
   int hours = getRoundedHour12hFormat(roundedTime.hour, roundedTime.min);
   int minutes = roundedTime.min;
 
-  Serial.print(timeClient.getHours());
-  Serial.print(":");
-  Serial.print(timeClient.getMinutes());
-  Serial.print(":");
-  Serial.println(timeClient.getSeconds());
   Serial.print("Spelled out as ");
   Serial.print(hours);
   Serial.print(" - ");
@@ -228,4 +224,22 @@ void playSound(int folderNr, int fileNr) {
 
 void applyVolumeLevel() {
   myDFPlayer.volume(volumeLevel);
+}
+
+Time getCurrentTime() {
+  time_t now;                       // this are the seconds since Epoch (1970) - UTC
+  time(&now);                       // read the current time
+  tm tm;
+  localtime_r(&now, &tm);           // update the structure tm with the current time
+  Serial.print(tm.tm_hour);         // hours since midnight  0-23
+  Serial.print(":");
+  Serial.print(tm.tm_min);          // minutes after the hour  0-59
+  Serial.print(":");
+  Serial.println(tm.tm_sec);          // seconds after the minute  0-61*
+
+  Time currentTime;
+  currentTime.hour = tm.tm_hour;
+  currentTime.min = tm.tm_min;
+  currentTime.sec = tm.tm_sec;
+  return currentTime;
 }
