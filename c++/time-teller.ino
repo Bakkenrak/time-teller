@@ -1,9 +1,7 @@
 #include "Arduino.h"
 #include "SoftwareSerial.h"
 #include "DFRobotDFPlayerMini.h"
-#include <NTPClient.h>
 #include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
 #include <cmath>
 #include <time.h>
 
@@ -17,26 +15,16 @@ struct Time {
 const char *ssid     = "MY_WIFI_SID";
 const char *password = "my-wifi-pw";
 
-// Init NTP Client 
-const long utcOffsetInSeconds = 3600;
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
-
 // init audio player
 SoftwareSerial mySoftwareSerial(13, 15); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
 const int audioPlayerBusyPin = 12;
+const int speakerTransistorPin = 4;
 
-const int volumeButtonPin = 4;
-int initialVolumeButtonState;
+const int volumeButtonPin = 5;
 int volumeLevel = 20; //Set volume value. From 0 to 30
 
-const byte sensorTriggerPin = 14;
-const byte sensorEchoPin = 16;
-const long sensorCheckIntervalMillis = 1000;
-// Generally, you should use "unsigned long" for variables that hold time
-// The value will quickly become too large for an int to store
-unsigned long lastSensorCheckMillis = 0;
+const int sensorTriggerPin = 14;
 
 void setup()
 {
@@ -49,11 +37,9 @@ void setup()
   
   connectAudioPlayer();
   
-  pinMode(sensorTriggerPin, OUTPUT);
-  pinMode(sensorEchoPin, INPUT);
+  pinMode(sensorTriggerPin, INPUT);
 
   pinMode(volumeButtonPin, INPUT);
-  initialVolumeButtonState = digitalRead(volumeButtonPin);
 }
 
 void connectToWifi() {
@@ -83,41 +69,19 @@ void connectAudioPlayer() {
 
   // configure audio player's busy pin as input
   pinMode(audioPlayerBusyPin, INPUT);
+  
+  pinMode(speakerTransistorPin, OUTPUT);
 }
 
 void loop()
 {
-  if (digitalRead(volumeButtonPin) != initialVolumeButtonState) {
+  if (digitalRead(volumeButtonPin) == HIGH) {
     toggleVolume();
   }
 
-  unsigned long currentMillis = millis();
-  bool shouldCheckSensor = currentMillis - lastSensorCheckMillis >= sensorCheckIntervalMillis;
-  if (shouldCheckSensor) {
-    lastSensorCheckMillis = currentMillis;
-    if (getSensorDistance() < 30) {
-      tellTime();
-      waitForReady();
-    }
+  if (digitalRead(sensorTriggerPin) == HIGH) {
+    tellTime();
   }
-}
-
-int getSensorDistance() {
-  digitalWrite(sensorTriggerPin, LOW);
-  delayMicroseconds(2);
-
-  digitalWrite(sensorTriggerPin, HIGH);
-  delayMicroseconds(10);
-
-  long duration = pulseIn(sensorEchoPin, HIGH);
-  int distance = duration/58;
-
-  if (distance > 300 || distance <= 0){
-    Serial.println("Out of sensor range!");
-  } else {
-    Serial.println("Distance to object: " + String(distance) + " cm");
-  }
-  return distance;
 }
 
 void waitForReady() {
@@ -218,8 +182,11 @@ void toggleVolume() {
 }
 
 void playSound(int folderNr, int fileNr) {
+  digitalWrite(speakerTransistorPin, HIGH);
   applyVolumeLevel();
   myDFPlayer.playFolder(folderNr, fileNr);
+  waitForReady();
+  digitalWrite(speakerTransistorPin, LOW);
 }
 
 void applyVolumeLevel() {
