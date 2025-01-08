@@ -9,6 +9,34 @@ struct Time {
     int hour;
     int min;
     int sec;
+
+    bool operator>(const Time& other) {
+      return hour >= other.hour && min >= other.min && sec >= other.sec;
+    }
+
+    Time plusSeconds(const int secondsToAdd) {
+      Time addedTime;
+      int addedSecs = sec + secondsToAdd;
+      addedTime.sec = addedSecs % 60;
+      int addedMins = min + addedSecs / 60;
+      addedTime.min = addedMins % 60;
+      int addedHour = hour + addedMins / 60;
+      addedTime.hour = addedHour % 24;
+      return addedTime;
+    }
+
+    void print() {
+      Serial.print(hour);
+      Serial.print(":");
+      Serial.print(min);
+      Serial.print(":");
+      Serial.print(sec);
+    }
+
+    void println() {
+      print();
+      Serial.println();
+    }
 };
 
 // init audio player
@@ -18,9 +46,10 @@ const int audioPlayerBusyPin = 12;
 const int speakerTransistorPin = 4;
 
 const int volumeButtonPin = 2;
-int volumeLevel = 20; //Set volume value. From 0 to 30
+int volumeLevel = 4; //Set volume value. From 0 to 30
 
 const int sensorTriggerPin = 14;
+Time cooldownUntil; 
 
 void setup()
 {
@@ -153,6 +182,15 @@ int getRoundedHour12hFormat(int hour, int minutes) {
 
 void tellTime() {
   Time currentTime = getCurrentTime();
+  if (currentTime > cooldownUntil) {
+    cooldownUntil = currentTime.plusSeconds(10);
+    Serial.print("New cooldown until: ");
+    cooldownUntil.println();
+  } else {
+    Serial.println("Not cooled down yet, so not telling time.");
+    return;
+  }
+
   Time roundedTime = getRoundedTime(currentTime.hour, currentTime.min, currentTime.sec);
   int hours = getRoundedHour12hFormat(roundedTime.hour, roundedTime.min);
   int minutes = roundedTime.min;
@@ -194,15 +232,13 @@ Time getCurrentTime() {
   time(&now);                       // read the current time
   tm tm;
   localtime_r(&now, &tm);           // update the structure tm with the current time
-  Serial.print(tm.tm_hour);         // hours since midnight  0-23
-  Serial.print(":");
-  Serial.print(tm.tm_min);          // minutes after the hour  0-59
-  Serial.print(":");
-  Serial.println(tm.tm_sec);          // seconds after the minute  0-61*
 
   Time currentTime;
   currentTime.hour = tm.tm_hour;
   currentTime.min = tm.tm_min;
   currentTime.sec = tm.tm_sec;
+
+  currentTime.println();
+  
   return currentTime;
 }
