@@ -11,7 +11,9 @@ struct Time {
     int sec;
 
     bool operator>(const Time& other) {
-      return hour >= other.hour && min >= other.min && sec >= other.sec;
+      return hour > other.hour 
+        || (hour == other.hour && min > other.min) 
+        || (hour == other.hour && min == other.min && sec > other.sec);
     }
 
     Time plusSeconds(const int secondsToAdd) {
